@@ -1,0 +1,55 @@
+/* =======================
+   Reset & Umum
+======================= */
+body {
+  font-family: Arial, sans-serif;
+  background: #f9f9f9;
+  padding: 20px;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* =======================
+   Item Berita
+======================= */
+.berita-item {
+  background: #fff;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.berita-item img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.berita-item p {
+  margin: 8px 0;
+}
+
+/* =======================
+   Tombol
+======================= */
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.btn-approve {
+  background: #4CAF50;
+  color: white;
+}
+
+.btn-reject {
+  background: #f44336;
+  color: white;
+}

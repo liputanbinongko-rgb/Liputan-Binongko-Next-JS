@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Wartawan</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header>
+   <div>
+    <h1>Dashboard Wartawan</h1>
+     <div class="auth-buttons">
+      <a href="index.html" class="active">Beranda</a>
+      <a href="profil.html">Profil</a>
+      <a href="kontak.html">Kontak</a>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="statusLogin"></div>
+    <form id="uploadForm">
+      <input type="text" id="judul" placeholder="Judul Berita" required><br>
+      <textarea id="isi" placeholder="Isi Berita" required></textarea><br>
+      <input type="file" id="fileUpload" accept="image/*,video/*"><br>
+      <button type="submit" id="uploadBtn">Upload Berita</button>
+    </form>
+    
+    <h2>Berita Saya</h2>
+   <div id="beritaSaya"></div>
+  </main>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Berita</h2>
+    <label for="editJudul">Judul</label>
+    <input type="text" id="editJudul" />
+
+    <label for="editIsi">Isi</label>
+    <textarea id="editIsi"></textarea>
+
+    <div class="modal-actions">
+      <button id="simpanEdit" class="btn-simpan">Simpan</button>
+      <button id="batalEdit" class="btn-batal">Batal</button>
+    </div>
+  </div>
+</div>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
