@@ -15,16 +15,26 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ✅ Fungsi format paragraf
+function formatParagraf(teks) {
+  if (!teks) return "";
+  return teks
+    .replace(/\r\n/g, "\n")      // samakan line break
+    .split(/\n\s*\n/)            // pisahkan berdasarkan enter ganda
+    .map(p => `<p>${p.trim()}</p>`)
+    .join("");
+}
+
 // Ambil ID berita dari URL
 const params = new URLSearchParams(location.search);
 const id = params.get("id");
 
 // Elemen detail berita
-const elJudul = document.getElementById("judul");
+const elJudul   = document.getElementById("judul");
 const elTanggal = document.getElementById("tanggal");
 const elPenulis = document.getElementById("penulis");
-const elGambar = document.getElementById("gambar");
-const elIsi = document.getElementById("isi");
+const elGambar  = document.getElementById("gambar");
+const elIsi     = document.getElementById("isi");
 const elNotFound = document.getElementById("not-found");
 
 // Elemen daftar populer & lainnya
@@ -60,11 +70,11 @@ async function loadDetail() {
       elGambar.style.display = "block";
     }
 
-    // Isi berita
-    if (data.isi && /<\/?[a-z][\s\S]*>/i.test(data.isi)) {
-      elIsi.innerHTML = data.isi;
+    // ✅ Isi berita dengan paragraf rapi
+    if (data.isi) {
+      elIsi.innerHTML = formatParagraf(data.isi);
     } else {
-      elIsi.textContent = data.isi || "";
+      elIsi.textContent = "";
     }
 
     // Aktifkan tombol share
