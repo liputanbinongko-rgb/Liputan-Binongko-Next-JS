@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+
+  <url>
+    <loc>https://liputan-binongko.vercel.app/berita/pantai-one-melangka.html</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Liputan Binongko</news:name>
+        <news:language>id</news:language>
+      </news:publication>
+      <news:publication_date>2025-09-30</news:publication_date>
+      <news:title>Pantai One Melangka: Pasir Panjang Khas Binongko</news:title>
+    </news:news>
+  </url>
+
+  <url>
+    <loc>https://liputan-binongko.vercel.app/berita/peresmian-listrik.html</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Liputan Binongko</news:name>
+        <news:language>id</news:language>
+      </news:publication>
+      <news:publication_date>2025-09-29</news:publication_date>
+      <news:title>Peresmian Listrik 24 Jam di Binongko</news:title>
+    </news:news>
+  </url>
+
+</urlset>
