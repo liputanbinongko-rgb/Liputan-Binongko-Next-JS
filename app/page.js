@@ -1,103 +1,112 @@
+// app/page.js
 import Image from "next/image";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, get, child } from "firebase/database";
+import SliderClient from "./components/SliderClient";
 
-export default function Home() {
+// ✅ Konfigurasi Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCHYqB77kPPJcoNfW8APKUQoh066eMGipA",
+  authDomain: "portal-binongko-dad4d.firebaseapp.com",
+  databaseURL: "https://portal-binongko-dad4d-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "portal-binongko-dad4d",
+  storageBucket: "portal-binongko-dad4d.appspot.com",
+  messagingSenderId: "582358308032",
+  appId: "1:582358308032:web:9d36c636adec204ab24925",
+};
+
+// ✅ Inisialisasi Firebase hanya sekali
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ✅ Fungsi SSR: ambil semua berita
+async function getAllBerita() {
+  const dbRef = ref(db);
+  const snapshot = await get(child(dbRef, `berita`));
+  if (!snapshot.exists()) return [];
+
+  const data = snapshot.val();
+  return Object.entries(data)
+    .map(([key, value]) => ({ id: key, ...value }))
+    .filter((b) => b.status === "approved")
+    .sort((a, b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
+}
+
+// ✅ Server Component Home page
+export default async function Home() {
+  const allBerita = await getAllBerita();
+
+  // Ambil 5 berita terbaru untuk slider
+  const beritaTerbaru = allBerita.slice(0, 5);
+  const beritaPopuler = [...allBerita].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+  const beritaLainnya = allBerita.slice(5);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <>
+      <head>
+        <title>Liputan Binongko - Berita Terbaru</title>
+        {/* ✅ Open Graph Meta Tags */}
+        {beritaTerbaru[0] && (
+          <>
+            <meta property="og:title" content={`Liputan Binongko - ${beritaTerbaru[0].judul}`} />
+            <meta property="og:description" content={beritaTerbaru[0].isi.slice(0, 150)} />
+            <meta property="og:image" content={beritaTerbaru[0].fileURL || beritaTerbaru[0].gambar || "/img/default.jpg"} />
+            <meta property="og:url" content="https://webkamu.com/" />
+          </>
+        )}
+      </head>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+      <main>
+        <header>
+          <div className="header-top">
+            <a href="#" className="btn">Login</a>
+            <a href="#" className="btn">Daftar</a>
+          </div>
+          <h1>Liputan Binongko</h1>
+          <nav className="auth-buttons">
+            <a href="#" className="active">Beranda</a>
+            <a href="#">Profil</a>
+            <a href="#">Kontak</a>
+            <a href="#">Tentang</a>
+          </nav>
+        </header>
+
+        {/* Slider Client Component */}
+        <section id="berita">
+          <h2 className="Berita-Terbaru">Berita Terbaru</h2>
+          <SliderClient berita={beritaTerbaru} />
+        </section>
+
+        {/* Berita Populer */}
+        <section id="berita-populer">
+          <h2 className="Berita-Populer">Berita Populer</h2>
+          <div id="berita-populer-list">
+            {beritaPopuler.map((b) => (
+              <div key={b.id} className="berita-populer-item">
+                <a href={`/berita/${b.id}`} className="berita-card-title">{b.judul}</a>
+                <p className="views-info">({b.views || 0}x dilihat)</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Berita Lainnya */}
+        <section id="berita-lainnya">
+          <h2 className="Berita-Lainnya">Berita Lainnya</h2>
+          <div id="berita-lainnya-list">
+            {beritaLainnya.map((b) => (
+              <div key={b.id} className="berita-lainnya-card">
+                <a href={`/berita/${b.id}`} className="berita-card-title">{b.judul}</a>
+                <p className="views-info">({b.views || 0}x dilihat)</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <footer>
+          <p>&copy; 2025 - Liputan Binongko. Semua Hak Dilindungi.</p>
+        </footer>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    </>
   );
 }
