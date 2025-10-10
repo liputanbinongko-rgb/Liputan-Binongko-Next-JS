@@ -14,11 +14,45 @@ const firebaseConfig = {
   appId: "1:582358308032:web:9d36c636adec204ab24925",
 };
 
-// ✅ Inisialisasi Firebase hanya sekali
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ Halaman SSR untuk berita berdasarkan ID
+// ✅ Metadata otomatis untuk share (FB, WA, Twitter)
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  const dbRef = ref(db);
+  const snapshot = await get(child(dbRef, `berita/${id}`));
+
+  if (!snapshot.exists()) {
+    return {
+      title: "Berita tidak ditemukan | Portal Binongko",
+      description: "Halaman berita ini tidak ditemukan di database.",
+    };
+  }
+
+  const data = snapshot.val();
+  const imageUrl = data.gambar || data.fileURL || "/fallback-image.jpg";
+
+  return {
+    title: data.judul,
+    description: data.isi?.substring(0, 150) + "...",
+    openGraph: {
+      title: data.judul,
+      description: data.isi?.substring(0, 150) + "...",
+      images: [imageUrl],
+      url: `https://portal-binongko.vercel.app/ssr/${id}`,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: data.judul,
+      description: data.isi?.substring(0, 150) + "...",
+      images: [imageUrl],
+    },
+  };
+}
+
+// ✅ Halaman utama berita
 export default async function Page({ params }) {
   const { id } = await params;
   const dbRef = ref(db);
@@ -35,29 +69,19 @@ export default async function Page({ params }) {
 
   const data = snapshot.val();
 
-  // ✅ Debug log (akan tampil di terminal, bisa dihapus nanti)
-  console.log(`[SSR] berita id=${id} gambar=${data.gambar || data.fileURL}`);
-
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-3">{data.judul}</h1>
 
       {(data.gambar || data.fileURL) ? (
-        <>
-          {/* ✅ Debug URL sementara di layar */}
-          <p className="text-sm text-gray-500 mb-2">
-            🔗 {data.gambar || data.fileURL}
-          </p>
-
-          <Image
-            src={data.gambar || data.fileURL}
-            alt={data.judul}
-            width={800}
-            height={400}
-            className="rounded-lg mb-4"
-            priority
-          />
-        </>
+        <Image
+          src={data.gambar || data.fileURL}
+          alt={data.judul}
+          width={800}
+          height={400}
+          className="rounded-lg mb-4"
+          priority
+        />
       ) : (
         <p className="text-gray-500 mb-4">Tidak ada gambar</p>
       )}

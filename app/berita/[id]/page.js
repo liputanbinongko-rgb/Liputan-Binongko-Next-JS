@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ref, get, set, onValue } from "firebase/database";
 import { getDB } from "../../../lib/firebase";
+import ShareButtons from "../../../components/ShareButtons";
 
 export default function BeritaDetailPage() {
   const { id } = useParams();
@@ -31,9 +32,6 @@ export default function BeritaDetailPage() {
 
       // Set judul tab
       document.title = `${berita.judul} - Liputan Binongko`;
-
-      // Share buttons aktif
-      setShareButtons(berita.judul);
     });
 
     // Ambil berita populer dan lainnya
@@ -53,36 +51,6 @@ export default function BeritaDetailPage() {
       setLainnya(lainnyaList.slice(0, 5));
     });
   }, [id]);
-
-  function setShareButtons(judul) {
-    const url = window.location.href;
-    const text = encodeURIComponent(`${judul} - Baca selengkapnya di Liputan Binongko`);
-    const encodedUrl = encodeURIComponent(url);
-
-    const shareLinks = {
-      wa: `https://wa.me/?text=${text}%20${encodedUrl}`,
-      fb: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      tw: `https://twitter.com/intent/tweet?text=${text}&url=${encodedUrl}`,
-    };
-
-    Object.entries(shareLinks).forEach(([id, href]) => {
-      const el = document.getElementById(`share-${id}`);
-      if (el) {
-        el.href = href;
-        el.target = "_blank";
-      }
-    });
-
-    const copyBtn = document.getElementById("share-link");
-    if (copyBtn) {
-      copyBtn.onclick = (e) => {
-        e.preventDefault();
-        navigator.clipboard.writeText(url).then(() => {
-          alert("✅ Link berita berhasil disalin!");
-        });
-      };
-    }
-  }
 
   function formatParagraf(teks) {
     if (!teks) return "";
@@ -134,13 +102,8 @@ export default function BeritaDetailPage() {
           </article>
         </section>
 
-        <div className="share-buttons">
-          <p>Bagikan:</p>
-          <a id="share-wa" href="#">WhatsApp</a>
-          <a id="share-fb" href="#">Facebook</a>
-          <a id="share-tw" href="#">Twitter</a>
-          <a id="share-link" href="#">Salin Link</a>
-        </div>
+        {/* ✅ Komponen ShareButtons dipanggil di sini */}
+        <ShareButtons judul={data.judul} />
 
         <section id="berita-populer">
           <h2 className="Berita-Populer">Berita Populer</h2>
