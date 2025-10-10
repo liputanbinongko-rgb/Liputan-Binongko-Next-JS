@@ -1,72 +1,89 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { ref, get, set, onValue } from "firebase/database";
+// app/berita/[id]/page.js
+import { notFound } from "next/navigation";
+import { ref, get, set } from "firebase/database";
 import { getDB } from "../../../lib/firebase";
 import ShareButtons from "../../../components/ShareButtons";
 
-export default function BeritaDetailPage() {
-  const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [populer, setPopuler] = useState([]);
-  const [lainnya, setLainnya] = useState([]);
-  const [notFound, setNotFound] = useState(false);
+// Fungsi untuk format paragraf
+function formatParagraf(teks) {
+  if (!teks) return "";
+  return teks
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((p, i) => <p key={i}>{p.trim()}</p>);
+}
 
-  useEffect(() => {
-    if (!id) return;
-    const db = getDB();
-    const beritaRef = ref(db, "berita/" + id);
+// Ambil metadata dinamis untuk tiap berita
+export async function generateMetadata({ params }) {
+  const { id } = params;
+  const db = getDB();
+  const beritaRef = ref(db, "berita/" + id);
+  const snapshot = await get(beritaRef);
 
-    get(beritaRef).then((snapshot) => {
-      if (!snapshot.exists()) {
-        setNotFound(true);
-        return;
-      }
+  if (!snapshot.exists()) {
+    return { title: "Berita Tidak Ditemukan - Liputan Binongko" };
+  }
 
-      const berita = snapshot.val();
-      setData(berita);
+  const berita = snapshot.val();
 
-      // Update views
-      const currentViews = berita.views || 0;
-      set(ref(db, "berita/" + id + "/views"), currentViews + 1);
+  return {
+    title: `${berita.judul} - Liputan Binongko`,
+    description: berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi",
+    openGraph: {
+      title: berita.judul,
+      description: berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi",
+      url: `https://liputan-binongko-wo1e.vercel.app/berita/${id}`,
+      siteName: "Liputan Binongko",
+      images: [
+        {
+          url: berita.fileURL || "/default.jpg",
+          width: 1200,
+          height: 630,
+          alt: berita.judul,
+        },
+      ],
+      locale: "id_ID",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: berita.judul,
+      description: berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi",
+      images: [berita.fileURL || "/default.jpg"],
+    },
+  };
+}
 
-      // Set judul tab
-      document.title = `${berita.judul} - Liputan Binongko`;
-    });
+export default async function BeritaDetailPage({ params }) {
+  const { id } = params;
+  const db = getDB();
+  const beritaRef = ref(db, "berita/" + id);
+  const snapshot = await get(beritaRef);
 
-    // Ambil berita populer dan lainnya
-    const semuaRef = ref(db, "berita");
-    onValue(semuaRef, (snap) => {
-      if (!snap.exists()) return;
-      const semua = Object.entries(snap.val())
+  if (!snapshot.exists()) {
+    notFound();
+  }
+
+  const data = snapshot.val();
+
+  // Update views
+  const currentViews = data.views || 0;
+  await set(ref(db, "berita/" + id + "/views"), currentViews + 1);
+
+  // Ambil 5 berita populer
+  const semuaRef = ref(db, "berita");
+  const semuaSnap = await get(semuaRef);
+  const semua = semuaSnap.exists()
+    ? Object.entries(semuaSnap.val())
         .map(([key, val]) => ({ id: key, ...val }))
-        .filter((b) => b.status === "approved");
+        .filter((b) => b.status === "approved")
+    : [];
 
-      const populerList = [...semua].sort((a, b) => (b.views || 0) - (a.views || 0));
-      setPopuler(populerList.slice(0, 5));
-
-      const lainnyaList = semua
-        .filter((b) => b.id !== id)
-        .sort((a, b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
-      setLainnya(lainnyaList.slice(0, 5));
-    });
-  }, [id]);
-
-  function formatParagraf(teks) {
-    if (!teks) return "";
-    return teks
-      .replace(/\r\n/g, "\n")
-      .split(/\n\s*\n/)
-      .map((p, i) => <p key={i}>{p.trim()}</p>);
-  }
-
-  if (notFound) {
-    return <main className="container"><h2>Berita tidak ditemukan</h2></main>;
-  }
-
-  if (!data) {
-    return <main className="container"><p>Memuat berita...</p></main>;
-  }
+  const populer = [...semua].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+  const lainnya = semua
+    .filter((b) => b.id !== id)
+    .sort((a, b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0))
+    .slice(0, 5);
 
   return (
     <div>
@@ -81,9 +98,6 @@ export default function BeritaDetailPage() {
           <a href="/">Beranda</a>
           <a href="/profil">Profil</a>
           <a href="/kontak">Kontak</a>
-          <a href="/kontak-dashboard" id="dashboardLink" style={{ display: "none" }}>
-            Dashboard Kontak
-          </a>
         </div>
       </header>
 
@@ -102,7 +116,7 @@ export default function BeritaDetailPage() {
           </article>
         </section>
 
-        {/* ✅ Komponen ShareButtons dipanggil di sini */}
+        {/* Komponen ShareButtons */}
         <ShareButtons judul={data.judul} />
 
         <section id="berita-populer">
