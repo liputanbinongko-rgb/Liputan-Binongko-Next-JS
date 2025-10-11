@@ -4,7 +4,7 @@ import { ref, get, set } from "firebase/database";
 import { getDB } from "../../../lib/firebase";
 import ShareButtons from "../../../components/ShareButtons";
 
-// Fungsi untuk format paragraf
+// Format paragraf biar rapi
 function formatParagraf(teks) {
   if (!teks) return "";
   return teks
@@ -13,9 +13,9 @@ function formatParagraf(teks) {
     .map((p, i) => <p key={i}>{p.trim()}</p>);
 }
 
-// Ambil metadata dinamis untuk tiap berita
+// Metadata dinamis untuk SEO & preview sosial
 export async function generateMetadata({ params }) {
-  const { id } = params;
+  const id = await params.id; // ← wajib pakai await sesuai Next.js 14+
   const db = getDB();
   const beritaRef = ref(db, "berita/" + id);
   const snapshot = await get(beritaRef);
@@ -25,37 +25,44 @@ export async function generateMetadata({ params }) {
   }
 
   const berita = snapshot.val();
+  const fullUrl = `https://liputan-binongko-wo1e.vercel.app/berita/${id}`;
+  const imageUrl = berita.fileURL || "/default.jpg";
+  const deskripsi = berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi";
 
   return {
+    metadataBase: new URL("https://liputan-binongko-wo1e.vercel.app"),
     title: `${berita.judul} - Liputan Binongko`,
-    description: berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi",
+    description: deskripsi,
     openGraph: {
       title: berita.judul,
-      description: berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi",
-      url: `https://liputan-binongko-wo1e.vercel.app/berita/${id}`,
+      description: deskripsi,
+      url: fullUrl,
       siteName: "Liputan Binongko",
+      type: "article",
+      locale: "id_ID",
       images: [
         {
-          url: berita.fileURL || "/default.jpg",
+          url: imageUrl,
           width: 1200,
           height: 630,
           alt: berita.judul,
         },
       ],
-      locale: "id_ID",
-      type: "article",
     },
     twitter: {
       card: "summary_large_image",
       title: berita.judul,
-      description: berita.isi?.slice(0, 150) || "Berita terkini dari Binongko, Wakatobi",
-      images: [berita.fileURL || "/default.jpg"],
+      description: deskripsi,
+      images: [imageUrl],
+      site: "@LiputanBinongko",
+      creator: "@LiputanBinongko",
     },
   };
 }
 
+// Halaman detail berita
 export default async function BeritaDetailPage({ params }) {
-  const { id } = params;
+  const id = await params.id;
   const db = getDB();
   const beritaRef = ref(db, "berita/" + id);
   const snapshot = await get(beritaRef);
@@ -66,22 +73,24 @@ export default async function BeritaDetailPage({ params }) {
 
   const data = snapshot.val();
 
-  // Update views
+  // Update jumlah views
   const currentViews = data.views || 0;
   await set(ref(db, "berita/" + id + "/views"), currentViews + 1);
 
-  // Ambil 5 berita populer
+  // Ambil semua berita untuk populer & lainnya
   const semuaRef = ref(db, "berita");
   const semuaSnap = await get(semuaRef);
   const semua = semuaSnap.exists()
-    ? Object.entries(semuaSnap.val())
-        .map(([key, val]) => ({ id: key, ...val }))
-        .filter((b) => b.status === "approved")
+    ? Object.entries(semuaSnap.val()).map(([key, val]) => ({ id: key, ...val }))
     : [];
 
-  const populer = [...semua].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+  const populer = semua
+    .filter((b) => b.status === "approved")
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 5);
+
   const lainnya = semua
-    .filter((b) => b.id !== id)
+    .filter((b) => b.id !== id && b.status === "approved")
     .sort((a, b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0))
     .slice(0, 5);
 
@@ -92,7 +101,6 @@ export default async function BeritaDetailPage({ params }) {
           <a href="/login" className="btn">Login</a>
           <a href="/register" className="btn">Daftar</a>
         </div>
-
         <h1>Liputan Binongko</h1>
         <div className="auth-buttons">
           <a href="/">Beranda</a>
@@ -108,15 +116,16 @@ export default async function BeritaDetailPage({ params }) {
             <span id="tanggal">{data.tanggal && "Tanggal: " + data.tanggal}</span>{" "}
             <span id="penulis">{data.penulis && "Penulis: " + data.penulis}</span>
           </div>
+
           {data.fileURL && (
             <img id="gambar" src={data.fileURL} alt={data.judul} style={{ maxWidth: "100%" }} />
           )}
+
           <article id="isi" className="isi-berita">
             {formatParagraf(data.isi)}
           </article>
         </section>
 
-        {/* Komponen ShareButtons */}
         <ShareButtons judul={data.judul} />
 
         <section id="berita-populer">
